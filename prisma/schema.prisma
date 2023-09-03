@@ -23,7 +23,7 @@ model User {
   dateOfBirth DateTime?  @db.Timestamptz
   avatar      String?
   isActive    Boolean    @default(true)
-  salesmanId  String?
+  salesmanId  String?    @unique
 }
 
 enum Role {

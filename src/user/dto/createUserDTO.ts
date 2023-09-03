@@ -1,5 +1,5 @@
 import { Role, Gender } from '@prisma/client';
-import { IsString, IsEmail, IsEnum, Matches, IsDate } from 'class-validator';
+import { IsString, IsEmail, IsEnum, Matches } from 'class-validator';
 
 export class CreateUserDTO {
   @IsString()
@@ -27,8 +27,25 @@ export class CreateUserDTO {
     message: 'Role must be following format: [MALE, FEMALE, OTHER]',
   })
   gender: Gender;
-  @IsDate()
-  dateOfBirth: Date;
   @IsString()
-  avatar: string;
+  dateOfBirth?: string;
+  @IsString()
+  avatar?: string;
+}
+
+export class MessageCreateUser {
+  status: number;
+  message: string;
+}
+
+export class FormatDataUser {
+  password: string;
+  dateOfBirth: Date;
+  username?: string;
+  email?: string;
+  phoneNumber?: string;
+  address?: string;
+  role: Role;
+  gender: Gender;
+  avatar?: string;
 }

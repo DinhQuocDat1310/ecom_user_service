@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RmqOptions, Transport } from '@nestjs/microservices';
+import { RmqContext, RmqOptions, Transport } from '@nestjs/microservices';
 
 @Injectable()
 export class RabbitMQService {
@@ -9,13 +9,17 @@ export class RabbitMQService {
     return {
       transport: Transport.RMQ,
       options: {
-        // urls: [this.configService.get<string>('RABBIT_MQ_URI')],
-        urls: ['amqp://localhost:5672'],
-        // queue: this.configService.get<string>(`RABBIT_MQ_${queue}_QUEUE`),
-        queue: 'RABBIT_MQ_USER_QUEUE',
+        urls: [this.configService.get<string>('RABBIT_MQ_URI')],
+        queue: this.configService.get<string>(`RABBIT_MQ_${queue}_QUEUE`),
         noAck,
         persistent: true,
       },
     };
+  }
+
+  ack(context: RmqContext) {
+    const channel = context.getChannelRef();
+    const originalMessage = context.getMessage();
+    channel.ack(originalMessage);
   }
 }
