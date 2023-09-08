@@ -12,6 +12,6 @@ async function bootstrap() {
     origin: 'http://localhost:3000',
   });
   await app.startAllMicroservices();
-  await app.listen(4000);
+  await app.listen(process.env.PORT);
 }
 bootstrap();

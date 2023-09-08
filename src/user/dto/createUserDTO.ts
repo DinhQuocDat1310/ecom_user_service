@@ -33,7 +33,7 @@ export class CreateUserDTO {
   avatar?: string;
 }
 
-export class MessageCreateUser {
+export class MessageUser {
   status: number;
   message: string;
 }
@@ -48,4 +48,9 @@ export class FormatDataUser {
   role: Role;
   gender: Gender;
   avatar?: string;
+}
+
+export class LoginUserDTO {
+  username: string;
+  password: string;
 }
