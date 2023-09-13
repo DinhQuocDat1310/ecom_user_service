@@ -1,6 +1,6 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDTO, LoginUserDTO } from './dto/createUserDTO';
+import { CreateUserDTO, LoginUserDTO, Tokens } from './dto/createUserDTO';
 import { RabbitMQService } from 'src/libs/common/src';
 import {
   Ctx,
@@ -19,7 +19,8 @@ export class UserController {
   ) {}
 
   @Post()
-  async createOrder(@Body() user: CreateUserDTO) {
+  @HttpCode(HttpStatus.CREATED)
+  async createUser(@Body() user: CreateUserDTO): Promise<Tokens> {
     return this.userService.createUser(user);
   }
 

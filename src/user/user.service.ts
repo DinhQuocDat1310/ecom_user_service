@@ -2,12 +2,10 @@ import {
   Injectable,
   Inject,
   InternalServerErrorException,
-  HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
 import {
   AUTH_SERVICE,
-  MESSAGE_CREATED_USER,
   MESSAGE_EXISTED_EMAIL,
   MESSAGE_EXISTED_PHONE,
   SALESMAN_SERVICE,
@@ -18,7 +16,7 @@ import {
   CreateUserDTO,
   FormatDataUser,
   LoginUserDTO,
-  MessageUser,
+  Tokens,
 } from './dto/createUserDTO';
 import { lastValueFrom } from 'rxjs';
 import { hash, compare } from 'bcrypt';
@@ -33,7 +31,7 @@ export class UserService {
     @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy,
   ) {}
 
-  createUser = async (dto: CreateUserDTO): Promise<MessageUser> => {
+  createUser = async (dto: CreateUserDTO): Promise<Tokens> => {
     const { email, password, phoneNumber, dateOfBirth }: CreateUserDTO = dto;
     await this.checkEmailUser(email, MESSAGE_EXISTED_EMAIL);
     await this.checkPhoneNumberUser(phoneNumber, MESSAGE_EXISTED_PHONE);
@@ -52,10 +50,17 @@ export class UserService {
         await lastValueFrom(this.salesmanClient.emit('user_created', user));
       if (user.role === Role.PURCHASER)
         await lastValueFrom(this.salesmanClient.emit('user_created', user));
-      return {
-        status: HttpStatus.CREATED,
-        message: MESSAGE_CREATED_USER,
-      };
+      // Send message to auth-microservice to notify them we created a user and need to token
+      const tokens = await lastValueFrom(
+        this.authClient.send('generate_token_user', user),
+      );
+      delete user['password'];
+      if (tokens) {
+        user['hashedRefreshToken'] = tokens.refreshToken;
+      }
+      // Send message to auth-microservice to notify them we created a user
+      await lastValueFrom(this.authClient.emit('save_user_with_token', user));
+      return tokens;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }

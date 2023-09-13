@@ -33,9 +33,14 @@ export class CreateUserDTO {
   avatar?: string;
 }
 
-export class MessageUser {
-  status: number;
-  message: string;
+// export class MessageUser {
+//   status: number;
+//   message: string;
+// }
+
+export class Tokens {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export class FormatDataUser {
