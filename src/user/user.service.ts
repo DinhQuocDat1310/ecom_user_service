@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   AUTH_SERVICE,
+  GOOGLE_PROVIDER,
   MESSAGE_EXISTED_EMAIL,
   MESSAGE_EXISTED_PHONE,
   SALESMAN_SERVICE,
@@ -32,16 +33,25 @@ export class UserService {
   ) {}
 
   createUser = async (dto: CreateUserDTO): Promise<Tokens> => {
-    const { email, password, phoneNumber, dateOfBirth }: CreateUserDTO = dto;
+    const {
+      email,
+      password,
+      phoneNumber,
+      dateOfBirth,
+      provider,
+    }: CreateUserDTO = dto;
     await this.checkEmailUser(email, MESSAGE_EXISTED_EMAIL);
     await this.checkPhoneNumberUser(phoneNumber, MESSAGE_EXISTED_PHONE);
+    const data: FormatDataUser = {
+      ...dto,
+      dateOfBirth: dateOfBirth
+        ? moment(dateOfBirth, 'DD/MM/YYYY').toDate()
+        : null,
+    };
+    provider === GOOGLE_PROVIDER
+      ? (data['password'] = null)
+      : (data['password'] = await hash(password, 10));
     try {
-      const hashPassword: string = await hash(password, 10);
-      const data: FormatDataUser = {
-        ...dto,
-        password: hashPassword,
-        dateOfBirth: moment(dateOfBirth, 'DD/MM/YYYY').toDate(),
-      };
       const user: User = await this.prismaService.user.create({
         data,
       });
@@ -54,11 +64,11 @@ export class UserService {
       const tokens = await lastValueFrom(
         this.authClient.send('generate_token_user', user),
       );
-      delete user['password'];
       if (tokens) {
         user['hashedRefreshToken'] = tokens.refreshToken;
       }
       // Send message to auth-microservice to notify them we created a user
+      if (user['password']) delete user['password'];
       await lastValueFrom(this.authClient.emit('save_user_with_token', user));
       return tokens;
     } catch (error) {
@@ -66,22 +76,30 @@ export class UserService {
     }
   };
 
+  createUserLoginWithGoogle = async (data: any) => {
+    return await this.createUser(data);
+  };
+
   checkEmailUser = async (email: string, message: string) => {
-    const user: User = await this.prismaService.user.findFirst({
-      where: {
-        email,
-      },
-    });
-    if (user) throw new BadRequestException(message);
+    if (email) {
+      const user: User = await this.prismaService.user.findFirst({
+        where: {
+          email,
+        },
+      });
+      if (user) throw new BadRequestException(message);
+    }
   };
 
   checkPhoneNumberUser = async (phoneNumber: string, message: string) => {
-    const user: User = await this.prismaService.user.findFirst({
-      where: {
-        phoneNumber,
-      },
-    });
-    if (user) throw new BadRequestException(message);
+    if (phoneNumber) {
+      const user: User = await this.prismaService.user.findFirst({
+        where: {
+          phoneNumber,
+        },
+      });
+      if (user) throw new BadRequestException(message);
+    }
   };
 
   updateSalesmanIdCreated = async (data: any): Promise<User> => {
@@ -117,10 +135,16 @@ export class UserService {
           ],
         },
       });
-      if (user && (await compare(password, user.password))) {
+      if (
+        user &&
+        password &&
+        user.password &&
+        (await compare(password, user.password))
+      ) {
         delete user['password'];
         return user;
       }
+      if (user && !password && user.provider === GOOGLE_PROVIDER) return user;
       return null;
     } catch (error) {
       throw new InternalServerErrorException(error.message);

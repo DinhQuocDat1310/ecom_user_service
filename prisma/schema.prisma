@@ -14,16 +14,17 @@ model User {
   id          String     @id @default(uuid())
   username    String?
   email       String?    @unique
-  password    String
+  password    String?
   phoneNumber String?    @unique
   address     String?
-  role        Role
+  role        Role?
   status      StatusUser @default(INIT)
-  gender      Gender
+  gender      Gender?
   dateOfBirth DateTime?  @db.Timestamptz
   avatar      String?
   isActive    Boolean    @default(true)
   salesmanId  String?    @unique
+  provider    String?
 }
 
 enum Role {

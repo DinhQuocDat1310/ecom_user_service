@@ -52,4 +52,14 @@ export class UserController {
     this.rmqService.ack(context);
     return user;
   }
+
+  @MessagePattern('create_user_login_google')
+  async createUserLoginWithGoogle(
+    @Payload() data: LoginUserDTO,
+    @Ctx() context: RmqContext,
+  ) {
+    const user = await this.userService.createUserLoginWithGoogle(data);
+    this.rmqService.ack(context);
+    return user;
+  }
 }
