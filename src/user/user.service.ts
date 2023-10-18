@@ -174,4 +174,21 @@ export class UserService {
       throw new InternalServerErrorException(error.message);
     }
   };
+
+  updateVerifyStatusUser = async (email: string): Promise<any> => {
+    try {
+      const user = await this.prismaService.user.update({
+        where: {
+          email,
+        },
+        data: {
+          status: 'VERIFIED',
+        },
+      });
+      if (user) return true;
+      return false;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  };
 }

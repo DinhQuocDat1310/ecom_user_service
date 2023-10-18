@@ -28,7 +28,7 @@
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/mapped-types": "*",
-    "@nestjs/microservices": "^10.2.2",
+    "@nestjs/microservices": "^10.2.7",
     "@nestjs/platform-express": "^9.0.0",
     "@prisma/client": "^5.2.0",
     "amqp-connection-manager": "^4.1.14",

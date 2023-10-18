@@ -62,4 +62,14 @@ export class UserController {
     this.rmqService.ack(context);
     return user;
   }
+
+  @MessagePattern('verify_email_with_otp')
+  async updateVerifyStatusUser(
+    @Payload() data: string,
+    @Ctx() context: RmqContext,
+  ) {
+    const user = await this.userService.updateVerifyStatusUser(data);
+    this.rmqService.ack(context);
+    return user;
+  }
 }
