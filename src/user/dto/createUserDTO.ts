@@ -5,8 +5,10 @@ import {
   IsEnum,
   Matches,
   ValidateIf,
+  IsOptional,
 } from 'class-validator';
 import { GOOGLE_PROVIDER } from '../constants/service';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDTO {
   @IsString()
@@ -62,8 +64,65 @@ export class FormatDataUser {
   provider?: string;
 }
 
+export class UpdateProfileDTO {
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Username' })
+  username?: string;
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Address' })
+  address?: string;
+  @IsEnum([Gender.MALE, Gender.FEMALE, Gender.OTHER], {
+    message: 'Gender must be following format: [MALE, FEMALE, OTHER]',
+  })
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Gender' })
+  gender?: Gender;
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Date of Birth' })
+  dateOfBirth?: string;
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Avatar url' })
+  avatar?: string;
+}
+
 export class LoginUserDTO {
   username: string;
   @ValidateIf((user) => user.provider !== GOOGLE_PROVIDER)
   password?: string;
+}
+
+export class PayloadDTO {
+  username: string;
+  userId: string;
+}
+
+export class RequestUser {
+  user: UserSignIn;
+}
+
+export class UserSignIn {
+  id: string;
+  username: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  role: string;
+  status: string;
+  gender: string;
+  dateOfBirth: Date;
+  avatar: string;
+  isActive: boolean;
+  provider: string;
+  salesmanId: string;
+}
+
+export class NotificationDTO {
+  @ApiProperty({ type: String, description: 'Device type client' })
+  device_type: string;
+  @ApiProperty({ type: String, description: 'Notification token client' })
+  notificationToken: string;
 }

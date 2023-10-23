@@ -3,12 +3,15 @@ import {
   Inject,
   InternalServerErrorException,
   BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   AUTH_SERVICE,
   GOOGLE_PROVIDER,
   MESSAGE_EXISTED_EMAIL,
   MESSAGE_EXISTED_PHONE,
+  NOTIFICATION_SERVICE,
+  NOTIFICATION_UPDATED_USER,
   SALESMAN_SERVICE,
 } from './constants/service';
 import { PrismaService } from 'src/prisma/service';
@@ -17,7 +20,10 @@ import {
   CreateUserDTO,
   FormatDataUser,
   LoginUserDTO,
+  NotificationDTO,
   Tokens,
+  UpdateProfileDTO,
+  UserSignIn,
 } from './dto/createUserDTO';
 import { lastValueFrom } from 'rxjs';
 import { hash, compare } from 'bcrypt';
@@ -30,6 +36,8 @@ export class UserService {
     private readonly prismaService: PrismaService,
     @Inject(SALESMAN_SERVICE) private readonly salesmanClient: ClientProxy,
     @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy,
+    @Inject(NOTIFICATION_SERVICE)
+    private readonly notificationClient: ClientProxy,
   ) {}
 
   createUser = async (dto: CreateUserDTO): Promise<Tokens> => {
@@ -67,8 +75,8 @@ export class UserService {
       if (tokens) {
         user['hashedRefreshToken'] = tokens.refreshToken;
       }
-      // Send message to auth-microservice to notify them we created a user
       if (user['password']) delete user['password'];
+      // Send message to auth-microservice to notify them we created a user => Need save user and token
       await lastValueFrom(this.authClient.emit('save_user_with_token', user));
       return tokens;
     } catch (error) {
@@ -187,6 +195,86 @@ export class UserService {
       });
       if (user) return true;
       return false;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  };
+
+  enableNotification = async (
+    user: UserSignIn,
+    notificationDTO: NotificationDTO,
+  ): Promise<any> => {
+    try {
+      const notification = await lastValueFrom(
+        this.notificationClient.send('enable_notification', {
+          user,
+          notificationDTO,
+        }),
+      );
+      return notification;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  };
+
+  disableNotification = async (
+    user: UserSignIn,
+    notificationDTO: NotificationDTO,
+  ): Promise<any> => {
+    try {
+      const notification = await lastValueFrom(
+        this.notificationClient.send('disable_notification', {
+          user,
+          notificationDTO,
+        }),
+      );
+      return notification;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  };
+
+  updateProfile = async (
+    userId: string,
+    updateProfileDTO: UpdateProfileDTO,
+  ): Promise<any> => {
+    try {
+      const { username, address, gender, dateOfBirth, avatar } =
+        updateProfileDTO;
+      const data = {
+        username,
+        address,
+        gender,
+        avatar,
+      };
+      if (dateOfBirth)
+        data['dateOfBirth'] = moment(dateOfBirth, 'DD/MM/YYYY').toDate();
+      const user = await this.prismaService.user.update({
+        data,
+        where: {
+          id: userId,
+        },
+      });
+      //[Updated User] - Push notification
+      user['notify_type'] = NOTIFICATION_UPDATED_USER;
+      await lastValueFrom(
+        this.notificationClient.emit('send_notification', user),
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Updated profile successfully',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  };
+
+  getAllNotifications = async (user: UserSignIn): Promise<any> => {
+    try {
+      const notifications = await lastValueFrom(
+        this.notificationClient.send('get_all_notification', user),
+      );
+      return notifications;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
