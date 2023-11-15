@@ -68,6 +68,13 @@ export class UserController {
     return await this.userService.updateProfile(req.user.id, updateProfileDTO);
   }
 
+  @MessagePattern('find_user_by_id')
+  async findUserByID(@Payload() userId: string, @Ctx() context: RmqContext) {
+    const user = await this.userService.findUserByID(userId);
+    this.rmqService.ack(context);
+    return user;
+  }
+
   @EventPattern('salesman_created')
   async getSalesmanIdCreated(@Payload() data: any, @Ctx() context: RmqContext) {
     const user = await this.userService.updateSalesmanIdCreated(data);

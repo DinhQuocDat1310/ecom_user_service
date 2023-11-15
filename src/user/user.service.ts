@@ -279,4 +279,17 @@ export class UserService {
       throw new InternalServerErrorException(error.message);
     }
   };
+
+  findUserByID = async (userId: string): Promise<boolean> => {
+    try {
+      const user: User = await this.prismaService.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+      return user ? true : false;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  };
 }
